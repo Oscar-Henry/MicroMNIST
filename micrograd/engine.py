@@ -1,3 +1,5 @@
+import math
+
 class Value:
     """ stores a single scalar value and its gradient """
 
@@ -48,26 +50,6 @@ class Value:
         output._backward = _backward
 
         return output
-
-    def backward(self):
-
-        topological_sort = []
-        visited = set()
-        
-        # Topological sort of all childrens from root
-        def build(root):
-            if root not in visited:
-                visited.add(root)
-                for child in root._prev:
-                    build(child)
-                topological_sort.append(root)
-        
-        build(self)
-
-        # Apply chain rule to get gradients
-        self.grad = 1
-        for node in reversed(topological_sort):
-            node._backward
     
     def __neg__(self): # -self
         return self * -1
@@ -89,6 +71,26 @@ class Value:
     
     def __rtruediv__(self, other): # other / self
         return other * self**-1
+    
+    def backward(self):
+
+        topological_sort = []
+        visited = set()
+        
+        # Topological sort of all childrens from root
+        def build(root):
+            if root not in visited:
+                visited.add(root)
+                for child in root._prev:
+                    build(child)
+                topological_sort.append(root)
+        
+        build(self)
+
+        # Apply chain rule to get gradients
+        self.grad = 1
+        for node in reversed(topological_sort):
+            node._backward
     
     def __repr__(self):
         return f"Value(data={self.data}, grad={self.grad})"
