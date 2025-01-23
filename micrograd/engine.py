@@ -42,14 +42,41 @@ class Value:
 
         return output
     
+    def __exp__(self):
+        x = self.data
+        out = Value(math.exp(x), (self, ), 'exp')
+    
+        def _backward():
+            self.grad += out.data * out.grad # NOTE: in the video I incorrectly used = instead of +=. Fixed here.
+        out._backward = _backward
+    
+        return out
+    
     def relu(self):
-        output = Value(0 if self.data < 0 else self.data, (self,))
+        output = Value(0 if self.data < 0 else self.data, (self,), 'ReLu')
 
         def _backward():
             self.grad += (output.data > 0) * output.grad
         output._backward = _backward
 
         return output
+    
+    def softmax(self, values):
+        S_i = math.exp(self.data) / sum(math.exp(val.data) for val in values),
+        output = Value(S_i, ((self, ) + values))
+
+        def _backward():
+            self.grad += S_i * (1 - S_i)
+            x = sum(math.exp(val.data) for val in values)
+            for val in values:
+                S_k = math.exp(val.data) / x
+                val.grad -= S_i * S_k
+            output._backward = _backward()
+
+        return output
+
+    def backProp(self, error, learning_rate):
+        return error
     
     def __neg__(self): # -self
         return self * -1
@@ -94,3 +121,4 @@ class Value:
     
     def __repr__(self):
         return f"Value(data={self.data}, grad={self.grad})"
+    
